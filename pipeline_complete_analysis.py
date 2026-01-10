@@ -400,9 +400,13 @@ print("\n[5/6] Creating visualizations...")
 
 fig, axes = plt.subplots(3, 1, figsize=(14, 10), sharex=True)
 
+# Filter data to 2018 onwards only
+df_panel_viz = df_panel[df_panel['year'] >= 2018].copy()
+df_alberta_viz = df_alberta_2sls[df_alberta_2sls['year'] >= 2018].sort_values('date')
+
 # Plot 1: DiD comparison
 for province, color in [('Alberta', 'blue'), ('Saskatchewan', 'green')]:
-    data = df_panel[df_panel['province'] == province].sort_values('date')
+    data = df_panel_viz[df_panel_viz['province'] == province].sort_values('date')
     axes[0].plot(data['date'], data['production_kbpd'], color=color, linewidth=2.5, label=province, alpha=0.85)
 
 axes[0].axvline(pd.Timestamp('2021-10-01'), color='red', linestyle='--', linewidth=2, alpha=0.7, label='Line 3')
@@ -411,17 +415,18 @@ axes[0].set_ylabel('Production (kb/d)', fontsize=12, fontweight='bold')
 axes[0].set_title('Difference-in-Differences: Alberta (Treated) vs Saskatchewan (Control)', fontsize=14, fontweight='bold')
 axes[0].legend(loc='upper left', fontsize=10)
 axes[0].grid(True, alpha=0.3)
+axes[0].set_xlim(pd.Timestamp('2018-01-01'), df_panel_viz['date'].max())
 
 # Plot 2: First stage (capacity → differential)
-alberta_sorted = df_alberta_2sls.sort_values('date')
-axes[1].plot(alberta_sorted['date'], alberta_sorted['wcs_wti_differential'], 'purple', linewidth=2, label='Actual WCS-WTI', alpha=0.7)
-axes[1].plot(alberta_sorted['date'], alberta_sorted['differential_predicted'], 'orange', linewidth=2, linestyle='--', label='Predicted (First Stage)', alpha=0.8)
+axes[1].plot(df_alberta_viz['date'], df_alberta_viz['wcs_wti_differential'], 'purple', linewidth=2, label='Actual WCS-WTI', alpha=0.7)
+axes[1].plot(df_alberta_viz['date'], df_alberta_viz['differential_predicted'], 'orange', linewidth=2, linestyle='--', label='Predicted (First Stage)', alpha=0.8)
 axes[1].axvline(pd.Timestamp('2021-10-01'), color='red', linestyle='--', linewidth=2, alpha=0.7)
 axes[1].axvline(pd.Timestamp('2024-05-01'), color='orange', linestyle='--', linewidth=2, alpha=0.7)
 axes[1].set_ylabel('Differential ($/bbl)', fontsize=12, fontweight='bold')
 axes[1].set_title('2SLS First Stage: Pipeline Capacity → WCS-WTI Differential', fontsize=12, fontweight='bold')
 axes[1].legend(loc='upper right', fontsize=10)
 axes[1].grid(True, alpha=0.3)
+axes[1].set_xlim(pd.Timestamp('2018-01-01'), df_alberta_viz['date'].max())
 
 # Plot 3: Declining intensity
 years = list(range(2018, 2025))
@@ -430,9 +435,10 @@ axes[2].plot(years, intensities, 'green', linewidth=3, marker='o', markersize=8,
 axes[2].axhline(67, color='gray', linestyle=':', linewidth=2, label='Old Constant (67 kg/bbl)')
 axes[2].set_ylabel('Emissions Intensity\n(kg CO2e/bbl)', fontsize=12, fontweight='bold')
 axes[2].set_xlabel('Year', fontsize=12, fontweight='bold')
-axes[2].set_title('Emissions Intensity: ~2% Annual Decline', fontsize=12, fontweight='bold')
+axes[2].set_title('Emissions Intensity: ~1.3% Annual Decline', fontsize=12, fontweight='bold')
 axes[2].legend(loc='upper right', fontsize=10)
 axes[2].grid(True, alpha=0.3)
+axes[2].set_xlim(2017.5, 2024.5)
 
 plt.tight_layout()
 plt.savefig('pipeline_complete_analysis.png', dpi=300, bbox_inches='tight')
