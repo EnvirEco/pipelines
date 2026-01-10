@@ -350,12 +350,12 @@ print(f"TMX:    {capacity_tmx} kb/d capacity → {diff_narrowing_tmx:.2f} $/bbl 
 # ===========================
 
 print("\n" + "="*80)
-print("PART 3: EMISSIONS WITH DECLINING INTENSITY (~2%/year)")
+print("PART 3: EMISSIONS WITH DECLINING INTENSITY (~1.3%/year)")
 print("="*80)
 
 # Year-specific intensity
 base_intensity = 75.0
-decline_rate = 0.02
+decline_rate = 0.013
 
 intensity_by_year = {}
 for year in range(2018, 2025):
