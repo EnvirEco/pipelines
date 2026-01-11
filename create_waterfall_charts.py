@@ -1,5 +1,13 @@
-pythonimport matplotlib.pyplot as plt
+"""
+Create waterfall charts for pipeline analysis
+- Chart 1: Production and modal shift
+- Chart 2: Emissions with technology offset
+"""
+
+import matplotlib.pyplot as plt
 import numpy as np
+
+print("Creating waterfall charts...")
 
 # Create figure with two subplots
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 6))
@@ -9,9 +17,9 @@ fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 6))
 # ============================================
 
 categories_oil = ['Baseline', 'Line 3\nproduction\n(Oct 2021)', 'TMX\nproduction\n(May 2024)', 
-                  'Rail decline\n(modal shift)', 'Adjustments', 'Net new\nproduction']
-values_oil = [0, 343, 201, -129, -18, 0]  # Rail is now NEGATIVE
-colors_oil = ['lightgray', 'cornflowerblue', 'royalblue', 'lightcoral', 'peachpuff', 'forestgreen']
+                  'Rail decline\n(modal shift)', 'Adjustments', 'Net pipeline\nthroughput']
+values_oil = [0, 343, 201, 129, -18, 0]  # Rail is POSITIVE - additional pipeline volume
+colors_oil = ['lightgray', 'cornflowerblue', 'royalblue', 'lightskyblue', 'peachpuff', 'forestgreen']
 
 # Calculate cumulative
 cumulative_oil = [0]
@@ -20,6 +28,8 @@ for i in range(1, len(values_oil)):
         cumulative_oil.append(cumulative_oil[-1] + values_oil[i])
     else:
         cumulative_oil.append(cumulative_oil[-1])  # Final total
+
+print(f"Oil volumes cumulative: {cumulative_oil}")
 
 # Create bars
 for i in range(len(categories_oil)):
@@ -41,7 +51,7 @@ for i in range(len(categories_oil) - 1):
         ax1.plot([i + 0.3, i + 0.7], [cumulative_oil[i], cumulative_oil[i]], 
                 'k--', linewidth=1, alpha=0.5)
 
-# Add value labels (now more visible on lighter colors)
+# Add value labels
 for i in range(1, len(categories_oil)):
     if i < len(categories_oil) - 1:
         y_pos = cumulative_oil[i-1] + values_oil[i]/2 if values_oil[i] > 0 else cumulative_oil[i] - abs(values_oil[i])/2
@@ -57,13 +67,13 @@ ax1.set_ylabel('Oil volume (kb/d)', fontsize=13, fontweight='bold')
 ax1.set_title('Pipeline impact: Production and modal shift by pipeline', fontsize=14, fontweight='bold', pad=20)
 ax1.axhline(0, color='black', linewidth=0.8)
 ax1.grid(axis='y', alpha=0.3)
-ax1.set_ylim(-50, 600)
+ax1.set_ylim(-50, 750)
 
 # Add annotations
-ax1.annotate('DiD effect:\n+343 kb/d', xy=(1, 343/2), xytext=(1, 380),
+ax1.annotate('DiD effect:\n+343 kb/d', xy=(1, 343/2), xytext=(1, 420),
             arrowprops=dict(arrowstyle='->', color='navy', lw=1.5),
             fontsize=9, ha='center', color='navy', fontweight='bold')
-ax1.annotate('DiD effect:\n+201 kb/d', xy=(2, 343 + 201/2), xytext=(2.5, 500),
+ax1.annotate('DiD effect:\n+201 kb/d', xy=(2, 343 + 201/2), xytext=(2.5, 600),
             arrowprops=dict(arrowstyle='->', color='navy', lw=1.5),
             fontsize=9, ha='center', color='navy', fontweight='bold')
 
@@ -72,8 +82,8 @@ ax1.annotate('DiD effect:\n+201 kb/d', xy=(2, 343 + 201/2), xytext=(2.5, 500),
 # ============================================
 
 categories_emissions = ['Baseline', 'Line 3\n(constant\nintensity)', 'TMX\n(constant\nintensity)', 
-                       'Technology\noffset\n(2%/year)', 'Net upstream\nemissions']
-values_emissions = [0, 8.4, 4.9, -8.3, 0]
+                       'Technology\noffset\n(1.3%/year)', 'Net upstream\nemissions']
+values_emissions = [0, 8.4, 4.9, -5.2, 0]  # Smaller offset with 1.3% vs 2%
 colors_emissions = ['lightgray', 'lightcoral', 'salmon', 'lightgreen', 'indianred']
 
 # Calculate cumulative
@@ -83,6 +93,8 @@ for i in range(1, len(values_emissions)):
         cumulative_emissions.append(cumulative_emissions[-1] + values_emissions[i])
     else:
         cumulative_emissions.append(cumulative_emissions[-1])
+
+print(f"Emissions cumulative: {cumulative_emissions}")
 
 # Create bars
 for i in range(len(categories_emissions)):
@@ -104,7 +116,7 @@ for i in range(len(categories_emissions) - 1):
         ax2.plot([i + 0.3, i + 0.7], [cumulative_emissions[i], cumulative_emissions[i]], 
                 'k--', linewidth=1, alpha=0.5)
 
-# Add value labels (now visible on lighter colors)
+# Add value labels
 for i in range(1, len(categories_emissions)):
     if i < len(categories_emissions) - 1:
         y_pos = cumulative_emissions[i-1] + values_emissions[i]/2 if values_emissions[i] > 0 else cumulative_emissions[i] - abs(values_emissions[i])/2
@@ -123,12 +135,17 @@ ax2.grid(axis='y', alpha=0.3)
 ax2.set_ylim(-2, 16)
 
 # Add breakdown annotation
-ax2.text(3.5, cumulative_emissions[3] + 0.8, 
-         'Actual:\nLine 3: 2.7 Mt\nTMX: 2.0 Mt', 
+ax2.text(3.5, cumulative_emissions[3] + 1.2, 
+         'Actual:\nLine 3: 4.7 Mt\nTMX: 3.4 Mt', 
          fontsize=9, bbox=dict(boxstyle='round', facecolor='lightyellow', alpha=0.8, edgecolor='black'),
          ha='center', fontweight='bold')
 
 plt.tight_layout()
-plt.savefig('pipeline_waterfall_charts_detailed.png', dpi=300, bbox_inches='tight')
-print("✓ Saved: pipeline_waterfall_charts_detailed.png")
-plt.show()
+
+# Save figure
+output_path = 'pipeline_waterfall_charts_corrected.png'
+plt.savefig(output_path, dpi=300, bbox_inches='tight')
+print(f"✓ Saved: {output_path}")
+
+plt.close()
+print("Done!")

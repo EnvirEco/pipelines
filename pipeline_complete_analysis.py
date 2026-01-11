@@ -355,7 +355,7 @@ print("="*80)
 
 # Year-specific intensity
 base_intensity = 75.0
-decline_rate = 0.013
+decline_rate = 0.02
 
 intensity_by_year = {}
 for year in range(2018, 2025):
