@@ -195,37 +195,58 @@ print(f"✓ Loaded {len(df_prices)} months of price data")
 # 4. CREATE PANEL DATASET
 # ===========================
 
-print("\n[4/6] Creating panel dataset and instruments...")
+print("\n[5/6] Creating visualizations...")
 
-# Combine provinces
-df_panel = pd.concat([df_alberta, df_sask], ignore_index=True)
-df_panel['date'] = pd.to_datetime(df_panel[['year', 'month']].assign(day=1))
+fig, axes = plt.subplots(3, 1, figsize=(14, 10))
 
-# Treatment indicators
-df_panel['treated'] = (df_panel['province'] == 'Alberta').astype(int)
-df_panel['line3_post'] = (((df_panel['year'] == 2021) & (df_panel['month'] >= 10)) | (df_panel['year'] > 2021)).astype(int)
-df_panel['tmx_post'] = (((df_panel['year'] == 2024) & (df_panel['month'] >= 5)) | (df_panel['year'] > 2024)).astype(int)
+# Filter to 2018+ only
+df_panel_viz = df_panel[df_panel['year'] >= 2018].copy()
+df_alberta_viz = df_alberta_2sls[df_alberta_2sls['year'] >= 2018].copy().sort_values('date')
 
-# DiD interactions
-df_panel['line3_did'] = df_panel['treated'] * df_panel['line3_post']
-df_panel['tmx_did'] = df_panel['treated'] * df_panel['tmx_post']
+# Plot 1: DiD comparison
+for province, color in [('Alberta', 'blue'), ('Saskatchewan', 'green')]:
+    data = df_panel_viz[df_panel_viz['province'] == province].sort_values('date')
+    axes[0].plot(data['date'], data['production_kbpd'], color=color, linewidth=2.5, label=province, alpha=0.85)
 
-df_panel['time_trend'] = df_panel.groupby('province').cumcount()
+axes[0].axvline(pd.Timestamp('2021-10-01'), color='red', linestyle='--', linewidth=2, alpha=0.7, label='Line 3')
+axes[0].axvline(pd.Timestamp('2024-05-01'), color='orange', linestyle='--', linewidth=2, alpha=0.7, label='TMX')
+axes[0].set_ylabel('Production (kb/d)', fontsize=12, fontweight='bold')
+axes[0].set_title('Difference-in-Differences: Alberta (Treated) vs Saskatchewan (Control)', fontsize=14, fontweight='bold')
+axes[0].legend(loc='upper left', fontsize=10)
+axes[0].grid(True, alpha=0.3)
+axes[0].set_xlim(pd.Timestamp('2018-01-01'), pd.Timestamp('2025-01-01'))
+axes[0].xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
+axes[0].xaxis.set_major_locator(mdates.YearLocator())
 
-# CRITICAL: Create PIPELINE CAPACITY instrument
-# This is exogenous (construction completion dates) and affects differential
-df_panel['pipeline_capacity_instrument'] = 0.0
-df_panel.loc[df_panel['line3_post'] == 1, 'pipeline_capacity_instrument'] += 590  # Line 3 capacity
-df_panel.loc[df_panel['tmx_post'] == 1, 'pipeline_capacity_instrument'] += 590   # TMX capacity
+# Plot 2: First stage (capacity → differential)
+axes[1].plot(df_alberta_viz['date'], df_alberta_viz['wcs_wti_differential'], 'purple', linewidth=2, label='Actual WCS-WTI', alpha=0.7)
+axes[1].plot(df_alberta_viz['date'], df_alberta_viz['differential_predicted'], 'orange', linewidth=2, linestyle='--', label='Predicted (First Stage)', alpha=0.8)
+axes[1].axvline(pd.Timestamp('2021-10-01'), color='red', linestyle='--', linewidth=2, alpha=0.7)
+axes[1].axvline(pd.Timestamp('2024-05-01'), color='orange', linestyle='--', linewidth=2, alpha=0.7)
+axes[1].set_ylabel('Differential ($/bbl)', fontsize=12, fontweight='bold')
+axes[1].set_title('2SLS First Stage: Pipeline Capacity → WCS-WTI Differential', fontsize=12, fontweight='bold')
+axes[1].legend(loc='upper right', fontsize=10)
+axes[1].grid(True, alpha=0.3)
+axes[1].set_xlim(pd.Timestamp('2018-01-01'), pd.Timestamp('2025-01-01'))
+axes[1].xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
+axes[1].xaxis.set_major_locator(mdates.YearLocator())
 
-# Add prices to Alberta data only (WCS-WTI is Alberta-specific)
-df_alberta_full = df_panel[df_panel['province'] == 'Alberta'].copy()
-df_alberta_full = pd.merge(df_alberta_full, df_prices, on=['year', 'month'], how='left')
-df_alberta_full = pd.merge(df_alberta_full, df_rail, on=['year', 'month'], how='left')
+# Plot 3: Declining intensity
+years = list(range(2018, 2025))
+intensities = [intensity_by_year[y] for y in years]
+axes[2].plot(years, intensities, 'green', linewidth=3, marker='o', markersize=8, label='Declining Intensity')
+axes[2].axhline(67, color='gray', linestyle=':', linewidth=2, label='Old Constant (67 kg/bbl)')
+axes[2].set_ylabel('Emissions Intensity\n(kg CO2e/bbl)', fontsize=12, fontweight='bold')
+axes[2].set_xlabel('Year', fontsize=12, fontweight='bold')
+axes[2].set_title('Emissions Intensity: ~2% Annual Decline', fontsize=12, fontweight='bold')
+axes[2].legend(loc='upper right', fontsize=10)
+axes[2].grid(True, alpha=0.3)
+axes[2].set_xlim(2017.5, 2024.5)
+axes[2].set_xticks(years)
 
-print(f"✓ Panel dataset: {len(df_panel)} observations (2 provinces)")
-print(f"✓ Alberta dataset with prices: {len(df_alberta_full)} observations")
-
+plt.tight_layout()
+plt.savefig('pipeline_complete_analysis.png', dpi=300, bbox_inches='tight')
+print("✓ Saved: pipeline_complete_analysis.png")
 # ===========================
 # 5. ANALYSIS PART 1: TRUE DiD
 # ===========================
