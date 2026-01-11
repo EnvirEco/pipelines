@@ -1,6 +1,8 @@
 # Pipeline Capacity Expansions and Alberta Oil Sands Production
 ## Revised Analysis with Saskatchewan Control and Declining Emissions Intensity
 
+# This document is AI grenerated based on original work by Dave Sawyer, January 11, 2026  
+
 ---
 
 ## Executive Summary
